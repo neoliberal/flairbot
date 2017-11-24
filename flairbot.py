@@ -1,102 +1,84 @@
 """Set user flairs."""
+from configparser import ConfigParser
+from typing import Match, Optional, Tuple, FrozenSet, List
 
-import re
-import time
-import configparser
 import praw
-import configuration
 
-class Flairbot:
+class Flairbot(object):
     """Main class"""
 
-    def __init__(self):
+    def __init__(self: Flairbot, reddit: praw.Reddit, subreddit: str) -> None:
         """Initial setup"""
+        self.reddit: praw.Reddit = reddit
+        self.subreddit: praw.models.Subreddit = self.reddit.subreddit(subreddit)
+        self.config: ConfigParser = ConfigParser()
+        self.config.read_string(
+            self.subreddit.wiki["flairbot/config"].content_md
+        )
+        self.flairs: ConfigParser = ConfigParser()
+        self.flairs.read_string(
+            self.subreddit.wiki["flairbot/config/flairs"].content_md
+        )
 
-        self.reddit = praw.Reddit()
-
-        self.subreddit = self.reddit.subreddit(configuration.subreddit)
-
-        while True:
-            try:
-                self.read_config()
-            except BaseException as error:
-                print("An exception was thrown!")
-                print(str(error))
-            time.sleep(5)
-
-    def read_config(self):
-        """Read config"""
-
-        self.config = configparser.ConfigParser(allow_no_value=True)
-        self.config.read_string(self.subreddit.wiki[configuration.remote_config_path].content_md)
-
-        self.fetch_pms()
-
-    def fetch_pms(self):
+    def fetch_pms(self: Flairbot) -> None:
         """Get PMs for account"""
-
-        valid = r"[A-Za-z0-9_-]+"
+        import re
 
         for msg in self.reddit.inbox.unread():
-            author = str(msg.author)
-            valid_user = re.match(valid, author)
-            if msg.subject == configuration.message_subject and valid_user:
-                self.process_pm(msg.body, author, msg)
+            author: praw.models.Redditor = msg.author
+            valid_user: Match[str] = re.match(r"[A-Za-z0-9_-]+", str(author))
+            if msg.subject == self.config["messages"]["subject"] and valid_user:
+                self.process_pm(msg)
 
-    def process_pm(self, msg, author, msgobj):
+    def process_pm(self: Flairbot, msg: praw.models.Message) -> None:
         """Process the PMs"""
+        msg.mark_read()
 
-        if self.check_flair_status("allow", msg):
-            self.set_flair(author, msg, self.config.get("allow", msg), False)
-        elif self.check_flair_status("ban", msg):
-            self.set_flair(author, msg, self.config.get("ban", msg), True)
+        result: Optional[Tuple[str, str, str]] = self.get_flair(msg.body)
+        if result is None:
+            return
 
-        msgobj.mark_read()
+        self.set_flair(msg.author, result[0], result[1], result[2])
 
-    def check_flair_status(self, section, key):
-        """Check if the flair is allowed"""
+    def get_flair(self: Flairbot, flair: str) -> Optional[Tuple[str, str, str]]:
+        """
+        Match flair selection to correct category
 
-        try:
-            self.config.get(section, key)
-            return True
-        except configparser.NoOptionError:
-            return False
+        returns None if no match
+        """
 
-    def set_flair(self, user, flair, text, ban):
+        section: Optional[str] = next(
+            (section for section in self.flairs if flair in section),
+            None
+        )
+        if section is None:
+            return None
+        text: str = self.flairs[section][flair]
+        return (section, flair, text)
+
+    def set_flair(self: Flairbot, user: praw.models.Redditor, section: str, flair: str, text: str):
         """Set the flairs"""
 
+        special_flairs: FrozenSet[str] = frozenset(
+            self.config["types"]
+        )
+
         for current_user_flair in self.subreddit.flair(redditor=user):
-            current_user_flair_class = current_user_flair["flair_css_class"] or ""
-            current_user_flair_text = current_user_flair["flair_text"] or ""
+            decomposed_class: List[str] = current_user_flair["flair_css_class"].split(' ')
+            current_text: str = current_user_flair["flair_text"]
 
-        if ban:
-            self.subreddit.banned.add(user, ban_reason=configuration.ban_reason)
-            self.reddit.redditor(user).message(configuration.ban_message_subject,
-                                               configuration.ban_message_body)
-            return
-        else:
-            for the_user in self.subreddit.banned(redditor=user):
-                if the_user.note == configuration.ban_reason:
-                    self.subreddit.banned.remove(user)
+            new_class: List[str] = []
 
-        if current_user_flair_class.find("regular") == 0:
-            self.subreddit.flair.set(user, current_user_flair_text, "regular " + flair + " image")
-        elif current_user_flair_class.find("expert") == 0:
-            self.subreddit.flair.set(user, current_user_flair_text, "expert " + flair + " image")
-        elif current_user_flair_class.find("mod") == 0:
-            self.subreddit.flair.set(user, current_user_flair_text, "mod " + flair + " image")
-        elif current_user_flair_class.find("other") == 0:
-            self.subreddit.flair.set(user, current_user_flair_text, "other " + flair + " image")
-        elif current_user_flair_class.find("green") == 0:
-            self.subreddit.flair.set(user, current_user_flair_text, "green " + flair + " image")
-        elif current_user_flair_class.find("orange") == 0:
-            self.subreddit.flair.set(user, current_user_flair_text, "orange " + flair + " image")
-        elif current_user_flair_class.find("shame") == 0:
-            self.reddit.redditor(user).message(configuration.shame_message_subject,
-                                               configuration.shame_message_body)
-        else:
-            self.subreddit.flair.set(user, text, flair + " image")
+            special: bool = False
+            for special_flair in special_flairs:
+                if special_flair in decomposed_class:
+                    special = True
+                    new_class.append(special_flair)
+                    break
 
-if __name__ == '__main__':
-    Flairbot()
-
+            new_class.extend([section, flair, "image"])
+            self.subreddit.flair.set(
+                redditor=user,
+                text=current_text if special else text,
+                css_class=" ".join(new_class)
+            )
