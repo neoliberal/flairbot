@@ -59,7 +59,7 @@ class Flairbot(object):
     def set_flair(self: Flairbot, user: praw.models.Redditor, section: str, flair: str, text: str):
         """Set the flairs"""
 
-        special_flairs: FrozenSet[str] = frozenset(
+        text_flairs: FrozenSet[str] = frozenset(
             self.config["types"]
         )
 
@@ -70,10 +70,10 @@ class Flairbot(object):
             new_class: List[str] = []
 
             special: bool = False
-            for special_flair in special_flairs:
-                if special_flair in decomposed_class:
+            for text_flair in text_flairs:
+                if text_flair in decomposed_class:
                     special = True
-                    new_class.append(special_flair)
+                    new_class.append(text_flair)
                     break
 
             new_class.extend([section, flair, "image"])
