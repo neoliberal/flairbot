@@ -25,8 +25,7 @@ class Flairbot(object):
         import re
 
         for msg in self.reddit.inbox.unread():
-            author: praw.models.Redditor = msg.author
-            valid_user: Match[str] = re.match(r"[A-Za-z0-9_-]+", str(author))
+            valid_user: Match[str] = re.match(r"[A-Za-z0-9_-]+", str(msg.author))
             if msg.subject == self.config["messages"]["subject"] and valid_user:
                 self.process_pm(msg)
 
