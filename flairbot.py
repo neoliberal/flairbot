@@ -4,10 +4,12 @@ from typing import Match, Optional, Tuple, FrozenSet, List
 
 import praw
 
+from slackbot.python_logging.slack_logger import make_slack_logger
+
 class Flairbot(object):
     """Main class"""
 
-    def __init__(self: Flairbot, reddit: praw.Reddit, subreddit: str) -> None:
+    def __init__(self: Flairbot, reddit: praw.Reddit, subreddit: str, webhook_url: str) -> None:
         """Initial setup"""
         self.reddit: praw.Reddit = reddit
         self.subreddit: praw.models.Subreddit = self.reddit.subreddit(subreddit)
@@ -19,6 +21,7 @@ class Flairbot(object):
         self.flairs.read_string(
             self.subreddit.wiki["flairbot/config/flairs"].content_md
         )
+        self.logger = make_slack_logger(webhook_url, "Flairbot")
 
     def fetch_pms(self: Flairbot) -> None:
         """Get PMs for account"""
