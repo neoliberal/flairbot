@@ -9,7 +9,7 @@ from slackbot.python_logging.slack_logger import make_slack_logger
 class Flairbot(object):
     """Main class"""
 
-    def __init__(self: Flairbot, reddit: praw.Reddit, subreddit: str, webhook_url: str) -> None:
+    def __init__(self, reddit: praw.Reddit, subreddit: str, webhook_url: str) -> None:
         """Initial setup"""
         self.reddit: praw.Reddit = reddit
         self.subreddit: praw.models.Subreddit = self.reddit.subreddit(subreddit)
@@ -23,7 +23,7 @@ class Flairbot(object):
         )
         self.logger = make_slack_logger(webhook_url, "Flairbot")
 
-    def fetch_pms(self: Flairbot) -> None:
+    def fetch_pms(self) -> None:
         """Get PMs for account"""
         import re
 
@@ -32,7 +32,7 @@ class Flairbot(object):
             if msg.subject == self.config["messages"]["subject"] and valid_user:
                 self.process_pm(msg)
 
-    def process_pm(self: Flairbot, msg: praw.models.Message) -> None:
+    def process_pm(self, msg: praw.models.Message) -> None:
         """Process the PMs"""
         msg.mark_read()
 
@@ -42,7 +42,7 @@ class Flairbot(object):
 
         self.set_flair(msg.author, result[0], result[1], result[2])
 
-    def get_flair(self: Flairbot, flair: str) -> Optional[Tuple[str, str, str]]:
+    def get_flair(self, flair: str) -> Optional[Tuple[str, str, str]]:
         """
         Match flair selection to correct category
 
@@ -58,7 +58,7 @@ class Flairbot(object):
         text: str = self.flairs[section][flair]
         return (section, flair, text)
 
-    def set_flair(self: Flairbot, user: praw.models.Redditor, section: str, flair: str, text: str):
+    def set_flair(self, user: praw.models.Redditor, section: str, flair: str, text: str):
         """Set the flairs"""
 
         text_flairs: FrozenSet[str] = frozenset(
