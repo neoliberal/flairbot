@@ -23,7 +23,7 @@ class Flairbot(object):
             self.subreddit.wiki["flairbot/config/flairs"].content_md
         )
         self.logger: logging.Logger = make_slack_logger(webhook_url, "Flairbot")
-        self.logger.debug("Initalized successfully")
+        self.logger.info("Flairbot initalized successfully")
 
     def fetch_pms(self) -> None:
         """Get PMs for account"""
@@ -38,14 +38,12 @@ class Flairbot(object):
 
     def process_pm(self, msg: praw.models.Message) -> None:
         """Process the PMs"""
-
         result: Optional[Tuple[str, str, str]] = self.get_flair(msg.body)
+        msg.mark_read()
         if result is None:
             return
 
         self.set_flair(msg.author, result[0], result[1], result[2])
-        msg.mark_read()
-
 
     def get_flair(self, flair: str) -> Optional[Tuple[str, str, str]]:
         """
