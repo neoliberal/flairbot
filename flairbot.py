@@ -1,5 +1,6 @@
 """Set user flairs."""
 from configparser import ConfigParser
+import logging
 from typing import Match, Optional, Tuple, FrozenSet, List
 
 import praw
@@ -21,7 +22,7 @@ class Flairbot(object):
         self.flairs.read_string(
             self.subreddit.wiki["flairbot/config/flairs"].content_md
         )
-        self.logger = make_slack_logger(webhook_url, "Flairbot")
+        self.logger: logging.Logger = make_slack_logger(webhook_url, "Flairbot")
 
     def fetch_pms(self) -> None:
         """Get PMs for account"""
@@ -55,6 +56,7 @@ class Flairbot(object):
             None
         )
         if section is None:
+            self.logger.warning("weird")
             return None
         text: str = self.flairs[section][flair]
         return (section, flair, text)
