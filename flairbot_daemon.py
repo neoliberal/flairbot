@@ -1,6 +1,7 @@
 """daemon runner"""
 import logging
 import os
+import sys
 
 import daemon
 from daemon import pidfile
@@ -29,6 +30,15 @@ def main() -> None:
     file_handler.setFormatter(logging.Formatter(format_string))
     file_handler.setLevel(logging.DEBUG)
     bot.logger.addHandler(file_handler)
+
+    def log_unhandled(*exc_info):
+        """sys.excepthook override"""
+        import traceback
+        # pylint: disable=E1120
+        text: str = "".join(traceback.format_exception(*exc_info))
+        bot.logger.critical(text)
+
+    sys.excepthook = log_unhandled
 
     with daemon.DaemonContext(
         working_directory="/var/lib/flairbot",
