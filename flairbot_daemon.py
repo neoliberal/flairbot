@@ -12,7 +12,7 @@ def main() -> None:
     reddit: praw.Reddit = praw.Reddit(
         client_id=os.environ["client_id"],
         client_secret=os.environ["client_secret"],
-        refresh_token=os.environ["request_token"],
+        refresh_token=os.environ["refresh_token"],
         user_agent="linux:flairbot:v3.0 (by /u/CactusChocolate)"
     )
     bot: Flairbot = Flairbot(
