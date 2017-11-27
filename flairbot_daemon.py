@@ -27,8 +27,8 @@ def main() -> None:
         umask=0o002,
         pidfile=pidfile.TimeoutPIDLockFile(
             "/var/run/flairbot.pid")
-        ):
-        while True:
+        ) as context:
+        while context.is_open:
             bot.fetch_pms()
 
 if __name__ == "__main__":

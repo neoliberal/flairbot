@@ -30,6 +30,7 @@ class Flairbot(object):
         for msg in self.reddit.inbox.unread():
             valid_user: Match[str] = re.match(r"[A-Za-z0-9_-]+", str(msg.author))
             if msg.subject == self.config["messages"]["subject"] and valid_user:
+                self.logger.info("changing flair...")
                 self.process_pm(msg)
 
     def process_pm(self, msg: praw.models.Message) -> None:
