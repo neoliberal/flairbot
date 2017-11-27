@@ -52,7 +52,7 @@ class Flairbot(object):
         """
 
         section: Optional[str] = next(
-            (section for section in self.flairs if flair in section),
+            (section for section in self.flairs.sections() if flair in section),
             None
         )
         if section is None:
