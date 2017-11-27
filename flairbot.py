@@ -52,8 +52,9 @@ class Flairbot(object):
         returns None if no match
         """
         try:
-            section = next(
-                (section for section in self.flairs.sections() if flair in section)
+            section: str = next(
+                (section for section in self.flairs.sections()
+                 if flair in self.flairs.options(section))
             )
         except StopIteration:
             self.logger.warning("Section is none on valid request of %s", flair)
