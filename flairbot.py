@@ -13,7 +13,7 @@ class Flairbot(object):
         """Initial setup"""
         self.reddit: praw.Reddit = reddit
         self.subreddit: praw.models.Subreddit = self.reddit.subreddit(subreddit)
-        self.config: ConfigParser = ConfigParser()
+        self.config: ConfigParser = ConfigParser(allow_no_value=True)
         self.config.read_string(
             self.subreddit.wiki["flairbot/config"].content_md
         )
@@ -86,6 +86,6 @@ class Flairbot(object):
                 text=new_text,
                 css_class=combined_class
             )
-            self.logger.info("Flair for /u/%s changed to \"%s\" - %s",
+            self.logger.info("Flair for /u/%s changed to \"%s\" (%s)",
                              user, new_text, combined_class
                             )
