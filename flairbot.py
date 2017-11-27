@@ -79,8 +79,13 @@ class Flairbot(object):
                     break
 
             new_class.extend([section, flair, "image"])
+            new_text: str = current_text if special else text
+            combined_class: str = " ".join(new_class)
             self.subreddit.flair.set(
                 redditor=user,
-                text=current_text if special else text,
-                css_class=" ".join(new_class)
+                text=new_text,
+                css_class=combined_class
             )
+            self.logger.info("Flair for /u/%s changed to \"%s\" - %s",
+                             user, new_text, combined_class
+                            )
