@@ -23,14 +23,17 @@ class Flairbot(object):
             self.subreddit.wiki["flairbot/config/flairs"].content_md
         )
         self.logger: logging.Logger = make_slack_logger(webhook_url, "Flairbot")
+        self.logger.debug("Initalized successfully")
 
     def fetch_pms(self) -> None:
         """Get PMs for account"""
         import re
 
         for msg in self.reddit.inbox.unread():
-            valid_user: Match[str] = re.match(r"[A-Za-z0-9_-]+", str(msg.author))
+            author: str = str(msg.author)
+            valid_user: Match[str] = re.match(r"[A-Za-z0-9_-]+", author)
             if msg.subject == self.config["messages"]["subject"] and valid_user:
+                self.logger.debug("Processing request for /u/%s", author)
                 self.process_pm(msg)
 
     def process_pm(self, msg: praw.models.Message) -> None:
@@ -52,11 +55,11 @@ class Flairbot(object):
         """
 
         section: Optional[str] = next(
-            (section for section in self.flairs.sections() if flair in section),
-            None
+            (section for section in self.flairs.sections() if flair in section)
         )
+
         if section is None:
-            self.logger.warning("weird")
+            self.logger.warning("Section is none on valid request of %s", flair)
             return None
         text: str = self.flairs[section][flair]
         return (section, flair, text)
@@ -77,6 +80,7 @@ class Flairbot(object):
             special: bool = False
             for text_flair in text_flairs:
                 if text_flair in decomposed_class:
+                    self.logger.debug("/u/%s is special", user)
                     special = True
                     new_class.append(text_flair)
                     break

@@ -1,13 +1,15 @@
 """daemon runner"""
+import logging
+import os
+
 import daemon
 from daemon import pidfile
+import praw
 
 from flairbot import Flairbot
 
 def main() -> None:
     """main function"""
-    import os
-    import praw
 
     reddit: praw.Reddit = praw.Reddit(
         client_id=os.environ["client_id"],
@@ -15,13 +17,19 @@ def main() -> None:
         refresh_token=os.environ["refresh_token"],
         user_agent="linux:flairbot:v3.0 (by /u/CactusChocolate)"
     )
-    print("authenticated")
+
     bot: Flairbot = Flairbot(
         reddit,
         "neoliberal",
         os.environ["slack_webhook_url"]
     )
-    print("created")
+
+    file_handler: logging.Handler = logging.FileHandler("/var/log/flairbot.log")
+    format_string: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    file_handler.setFormatter(logging.Formatter(format_string))
+    file_handler.setLevel(logging.DEBUG)
+    bot.logger.addHandler(file_handler)
+
     with daemon.DaemonContext(
         working_directory="/var/lib/flairbot",
         umask=0o002,
