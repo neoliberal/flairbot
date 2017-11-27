@@ -15,11 +15,13 @@ def main() -> None:
         refresh_token=os.environ["refresh_token"],
         user_agent="linux:flairbot:v3.0 (by /u/CactusChocolate)"
     )
+    print("authenticated")
     bot: Flairbot = Flairbot(
         reddit,
         "neoliberal",
         os.environ["slack_webhook_url"]
     )
+    print("created")
     with daemon.DaemonContext(
         working_directory="/var/lib/flairbot",
         umask=0o002,
