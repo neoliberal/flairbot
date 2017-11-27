@@ -51,14 +51,14 @@ class Flairbot(object):
 
         returns None if no match
         """
-
-        section: Optional[str] = next(
-            (section for section in self.flairs.sections() if flair in section)
-        )
-
-        if section is None:
+        try:
+            section = next(
+                (section for section in self.flairs.sections() if flair in section)
+            )
+        except StopIteration:
             self.logger.warning("Section is none on valid request of %s", flair)
             return None
+
         text: str = self.flairs[section][flair]
         return (section, flair, text)
 
