@@ -4,8 +4,8 @@ After=multi-user.target
 
 [Service]
 Type=simple
-ExecStart=python3.6 /var/lib/flairbot/flairbot.py
-User=pi
+ExecStart=/usr/bin/python3.6 /var/lib/flairbot/flairbot_service.py
+User=admin
 WorkingDirectory=/var/lib/flairbot
 Restart=no
 
