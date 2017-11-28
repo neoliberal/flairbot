@@ -1,0 +1,13 @@
+[Unit]
+Description=Flairbot
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=python3.6 /var/lib/flairbot/flairbot.py
+User=pi
+WorkingDirectory=/var/lib/flairbot
+Restart=no
+
+[Install]
+WantedBy=multi-user.target
