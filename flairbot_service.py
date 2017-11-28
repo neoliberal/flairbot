@@ -3,8 +3,6 @@ import logging
 import os
 import sys
 
-import daemon
-from daemon import pidfile
 import praw
 
 from flairbot import Flairbot
@@ -40,14 +38,8 @@ def main() -> None:
 
     sys.excepthook = log_unhandled
 
-    with daemon.DaemonContext(
-        working_directory="/var/lib/flairbot",
-        umask=0o002,
-        pidfile=pidfile.TimeoutPIDLockFile(
-            "/var/run/flairbot.pid")
-        ) as context:
-        while context.is_open:
-            bot.fetch_pms()
+    while True:
+        bot.fetch_pms()
 
 if __name__ == "__main__":
     main()
