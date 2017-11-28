@@ -92,6 +92,6 @@ class Flairbot(object):
                 text=new_text,
                 css_class=combined_class
             )
-            self.logger.info("Flair for /u/%s changed to \"%s\" (%s)",
+            self.logger.debug("Flair for /u/%s changed to \"%s\" (%s)",
                              user, new_text, combined_class
                             )
