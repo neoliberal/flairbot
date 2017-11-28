@@ -71,7 +71,8 @@ class Flairbot(object):
         )
 
         for current_user_flair in self.subreddit.flair(redditor=user):
-            decomposed_class: List[str] = current_user_flair["flair_css_class"].split(' ')
+            current_class: Optional[str] = current_user_flair["flair_css_class"]
+            decomposed_class: List[str] = [] if current_class is None else current_class.split(' ')
             current_text: str = current_user_flair["flair_text"]
 
             new_class: List[str] = []
@@ -93,5 +94,5 @@ class Flairbot(object):
                 css_class=combined_class
             )
             self.logger.debug("Flair for /u/%s changed to \"%s\" (%s)",
-                             user, new_text, combined_class
-                            )
+                              user, new_text, combined_class
+                             )
