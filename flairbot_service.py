@@ -1,7 +1,5 @@
 """daemon runner"""
-import logging
 import os
-import sys
 
 import praw
 
@@ -20,23 +18,7 @@ def main() -> None:
     bot: Flairbot = Flairbot(
         reddit,
         "neoliberal",
-        os.environ["slack_webhook_url"]
     )
-
-    file_handler: logging.Handler = logging.FileHandler("/var/log/flairbot.log")
-    format_string: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    file_handler.setFormatter(logging.Formatter(format_string))
-    file_handler.setLevel(logging.DEBUG)
-    bot.logger.addHandler(file_handler)
-
-    def log_unhandled(*exc_info):
-        """sys.excepthook override"""
-        import traceback
-        # pylint: disable=E1120
-        text: str = "".join(traceback.format_exception(*exc_info))
-        bot.logger.critical(text)
-
-    sys.excepthook = log_unhandled
 
     while True:
         bot.fetch_pms()

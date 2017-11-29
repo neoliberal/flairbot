@@ -10,7 +10,7 @@ from slackbot.python_logging.slack_logger import make_slack_logger
 class Flairbot(object):
     """Main class"""
 
-    def __init__(self, reddit: praw.Reddit, subreddit: str, webhook_url: str) -> None:
+    def __init__(self, reddit: praw.Reddit, subreddit: str) -> None:
         """Initial setup"""
         self.reddit: praw.Reddit = reddit
         self.subreddit: praw.models.Subreddit = self.reddit.subreddit(subreddit)
@@ -22,19 +22,26 @@ class Flairbot(object):
         self.flairs.read_string(
             self.subreddit.wiki["flairbot/config/flairs"].content_md
         )
-        self.logger: logging.Logger = make_slack_logger(webhook_url, "Flairbot")
+        self.logger: logging.Logger = make_slack_logger()
         self.logger.info("Flairbot initalized successfully")
 
     def fetch_pms(self) -> None:
         """Get PMs for account"""
         import re
 
-        for msg in self.reddit.inbox.unread():
-            author: str = str(msg.author)
-            valid_user: Match[str] = re.match(r"[A-Za-z0-9_-]+", author)
-            if msg.subject == self.config["messages"]["subject"] and valid_user:
-                self.logger.debug("Processing request for /u/%s", author)
-                self.process_pm(msg)
+        import prawcore
+
+        try:
+            for msg in self.reddit.inbox.unread():
+                author: str = str(msg.author)
+                valid_user: Match[str] = re.match(r"[A-Za-z0-9_-]+", author)
+                if msg.subject == self.config["messages"]["subject"] and valid_user:
+                    self.logger.debug("Processing request for /u/%s", author)
+                    self.process_pm(msg)
+        except prawcore.exceptions.RequestException:
+            self.logger.exception("Request error: Sleeping for 10 seconds.")
+            import time
+            time.sleep(10)
 
     def process_pm(self, msg: praw.models.Message) -> None:
         """Process the PMs"""
