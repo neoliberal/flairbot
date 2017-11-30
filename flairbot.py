@@ -12,7 +12,7 @@ class Flairbot(object):
 
     def __init__(self, reddit: praw.Reddit, subreddit: str) -> None:
         """Initial setup"""
-        self.logger: logging.Logger = make_slack_logger()
+        self.logger: logging.Logger = make_slack_logger("flairbot")
         self.reddit: praw.Reddit = reddit
         self.subreddit: praw.models.Subreddit = self.reddit.subreddit(subreddit)
         self.config: ConfigParser = ConfigParser(allow_no_value=True)
