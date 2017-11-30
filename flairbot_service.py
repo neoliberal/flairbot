@@ -17,7 +17,7 @@ def main() -> None:
 
     bot: Flairbot = Flairbot(
         reddit,
-        "neoliberal",
+        "neoliberal"
     )
 
     while True:
