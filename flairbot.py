@@ -12,6 +12,7 @@ class Flairbot(object):
 
     def __init__(self, reddit: praw.Reddit, subreddit: str) -> None:
         """Initial setup"""
+        self.logger: logging.Logger = make_slack_logger()
         self.reddit: praw.Reddit = reddit
         self.subreddit: praw.models.Subreddit = self.reddit.subreddit(subreddit)
         self.config: ConfigParser = ConfigParser(allow_no_value=True)
@@ -22,7 +23,6 @@ class Flairbot(object):
         self.flairs.read_string(
             self.subreddit.wiki["flairbot/config/flairs"].content_md
         )
-        self.logger: logging.Logger = make_slack_logger()
         self.logger.info("Flairbot initalized successfully")
 
     def fetch_pms(self) -> None:
