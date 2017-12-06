@@ -58,9 +58,16 @@ class Flairbot(object):
 
         try:
             for message in self.reddit.inbox.unread():
-                author: str = str(message.author)
-                if message.subject == self.config["messages"]["subject"]:
-                    self.logger.debug("Processing request \"%s\" for /u/%s", message, author)
+                if message.subject == self.config.get(
+                        "messages",
+                        "subject",
+                        fallback="updateflair"
+                    ):
+                    self.logger.debug(
+                        "Processing request \"%s\" for /u/%s",
+                        message.body,
+                        message.author
+                    )
                     self.process_pm(message)
         except prawcore.exceptions.RequestException:
             self.logger.exception("Request error: Sleeping for 60 seconds.")
@@ -90,10 +97,10 @@ class Flairbot(object):
         """
         self.logger.debug("Getting flair properties")
         try:
-            section: str = next(
-                (section for section in self.flairs.sections()
-                 if flair in self.flairs.options(section))
-            )
+            section: str = next((
+                section for section in self.flairs.sections()
+                if flair in self.flairs.options(section)
+            ))
         except StopIteration:
             self.logger.warning("Flair \"%s\" does not exist", flair)
             return None
@@ -110,7 +117,7 @@ class Flairbot(object):
         self.logger.debug("Sending PM to /u/%s", user)
         message_str: str = (
             f"Your flair selection \"{message.body}\" was invalid."
-            "Flairs can be found on the sidebar."
+            " Flairs can be found on the sidebar."
         )
 
         user.message(
