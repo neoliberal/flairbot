@@ -1,7 +1,7 @@
 """Set user flairs."""
 from configparser import ConfigParser
 import logging
-from typing import Match, Optional, Tuple, FrozenSet, List
+from typing import Optional, Tuple, FrozenSet, List
 
 import praw
 
@@ -12,72 +12,120 @@ class Flairbot(object):
 
     def __init__(self, reddit: praw.Reddit, subreddit: str) -> None:
         """Initial setup"""
+        def get_config() -> ConfigParser:
+            """returns config"""
+            self.logger.debug("Creating config")
+            parser: ConfigParser = ConfigParser(allow_no_value=True)
+
+            self.logger.debug("Getting config")
+            config_str: str = self.subreddit.wiki["flairbot/config"].content_md
+            if config_str:
+                self.logger.debug("Got config")
+                parser.read_string(config_str)
+            else:
+                self.logger.error("No config found")
+
+            self.logger.debug("config created")
+            return parser
+
         self.logger: logging.Logger = make_slack_logger("flairbot")
         self.reddit: praw.Reddit = reddit
         self.subreddit: praw.models.Subreddit = self.reddit.subreddit(subreddit)
-        self.config: ConfigParser = ConfigParser(allow_no_value=True)
-        self.config.read_string(
-            self.subreddit.wiki["flairbot/config"].content_md
+        self.config = get_config()
+        self.text_flairs: FrozenSet[str] = frozenset(
+            self.config["types"]
         )
-        self.flairs: ConfigParser = ConfigParser()
-        self.flairs.read_string(
-            self.subreddit.wiki["flairbot/config/flairs"].content_md
-        )
+        self.flairs = self.get_flairs()
         self.logger.info("Flairbot initalized successfully")
+
+    def get_flairs(self) -> ConfigParser:
+        """fetches flairs"""
+        self.logger.debug("Fetching flairs")
+        flairs: ConfigParser = ConfigParser()
+        flairs_str: str = self.subreddit.wiki["flairbot/config/flairs"].content_md
+        if flairs_str:
+            self.logger.debug("Fetched flairs")
+            flairs.read_string(flairs_str)
+        else:
+            self.logger.critical("No flairs found. Aborting.")
+            import sys
+            sys.exit(0)
+        return flairs
 
     def fetch_pms(self) -> None:
         """Get PMs for account"""
-        import re
-
         import prawcore
 
         try:
-            for msg in self.reddit.inbox.unread():
-                author: str = str(msg.author)
-                valid_user: Match[str] = re.match(r"[A-Za-z0-9_-]+", author)
-                if msg.subject == self.config["messages"]["subject"] and valid_user:
-                    self.logger.debug("Processing request for /u/%s", author)
-                    self.process_pm(msg)
+            for message in self.reddit.inbox.unread():
+                author: str = str(message.author)
+                if message.subject == self.config["messages"]["subject"]:
+                    self.logger.debug("Processing request \"%s\" for /u/%s", message, author)
+                    self.process_pm(message)
         except prawcore.exceptions.RequestException:
-            self.logger.exception("Request error: Sleeping for 10 seconds.")
+            self.logger.exception("Request error: Sleeping for 60 seconds.")
             import time
-            time.sleep(10)
+            time.sleep(60)
 
-    def process_pm(self, msg: praw.models.Message) -> None:
+    def process_pm(self, message: praw.models.Message) -> None:
         """Process the PMs"""
-        result: Optional[Tuple[str, str, str]] = self.get_flair(msg.body)
-        msg.mark_read()
+        self.logger.debug("Updating flairs")
+        self.flairs = self.get_flairs()
+        self.logger.debug("Updated flairs")
+
+        flair: str = message.body
+        result: Optional[Tuple[str, str, str]] = self.get_flair_properties(flair)
+        message.mark_read()
         if result is None:
+            self.send_pm_failure(message)
             return
 
-        self.set_flair(msg.author, result[0], result[1], result[2])
+        self.set_flair(message.author, result[0], result[1], result[2])
 
-    def get_flair(self, flair: str) -> Optional[Tuple[str, str, str]]:
+    def get_flair_properties(self, flair: str) -> Optional[Tuple[str, str, str]]:
         """
         Match flair selection to correct category
 
         returns None if no match
         """
+        self.logger.debug("Getting flair properties")
         try:
             section: str = next(
                 (section for section in self.flairs.sections()
                  if flair in self.flairs.options(section))
             )
         except StopIteration:
-            self.logger.warning("Section is none on valid request of %s", flair)
+            self.logger.warning("Flair \"%s\" does not exist", flair)
             return None
 
         text: str = self.flairs[section][flair]
+        self.logger.debug("Got flair properties")
         return (section, flair, text)
+
+    # pylint: disable=R0201
+    def send_pm_failure(self, message: praw.models.Message):
+        """pms user informing flair selection is invalid"""
+        user: praw.models.Redditor = message.author
+
+        self.logger.debug("Sending PM to /u/%s", user)
+        message_str: str = (
+            f"Your flair selection \"{message.body}\" was invalid."
+            "Flairs can be found on the sidebar."
+        )
+
+        user.message(
+            subject="Flair update failed",
+            message=message_str
+        )
+
+        self.logger.debug("PM sent to /u/%s", user)
+        return
 
     def set_flair(self, user: praw.models.Redditor, section: str, flair: str, text: str):
         """Set the flairs"""
 
-        text_flairs: FrozenSet[str] = frozenset(
-            self.config["types"]
-        )
-
         for current_user_flair in self.subreddit.flair(redditor=user):
+            self.logger.debug("Setting flair for /u/%s", user)
             current_class: Optional[str] = current_user_flair["flair_css_class"]
             decomposed_class: List[str] = [] if current_class is None else current_class.split(' ')
             current_text: str = current_user_flair["flair_text"]
@@ -85,7 +133,7 @@ class Flairbot(object):
             new_class: List[str] = []
 
             special: bool = False
-            for text_flair in text_flairs:
+            for text_flair in self.text_flairs:
                 if text_flair in decomposed_class:
                     self.logger.debug("/u/%s is special", user)
                     special = True
