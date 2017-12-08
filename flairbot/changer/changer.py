@@ -5,9 +5,7 @@ from typing import Optional, Tuple, FrozenSet, List
 
 import praw
 
-from slackbot.python_logging.slack_logger import make_slack_logger
-
-class Flairbot(object):
+class FlairChanger(object):
     """Main class"""
 
     def __init__(self, reddit: praw.Reddit, subreddit: str) -> None:
@@ -28,7 +26,7 @@ class Flairbot(object):
             self.logger.debug("config created")
             return parser
 
-        self.logger: logging.Logger = make_slack_logger("flairbot")
+        self.logger: logging.Logger = slack_logger.initialize("flairbot")
         self.reddit: praw.Reddit = reddit
         self.subreddit: praw.models.Subreddit = self.reddit.subreddit(subreddit)
         self.config = get_config()
