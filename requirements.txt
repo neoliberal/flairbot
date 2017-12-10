@@ -1,1 +1,2 @@
 praw
+slack_python_logging

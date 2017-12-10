@@ -4,8 +4,7 @@ import logging
 from typing import Optional, Tuple, FrozenSet, List
 
 import praw
-
-from slackbot.python_logging.slack_logger import make_slack_logger
+from slack_python_logging import slack_logger
 
 class Flairbot(object):
     """Main class"""
@@ -28,7 +27,7 @@ class Flairbot(object):
             self.logger.debug("config created")
             return parser
 
-        self.logger: logging.Logger = make_slack_logger("flairbot")
+        self.logger: logging.Logger = slack_logger.initialize("flairbot")
         self.reddit: praw.Reddit = reddit
         self.subreddit: praw.models.Subreddit = self.reddit.subreddit(subreddit)
         self.config = get_config()
@@ -36,7 +35,7 @@ class Flairbot(object):
             self.config["types"]
         )
         self.flairs = self.get_flairs()
-        self.logger.info("Flairbot initalized successfully")
+        self.logger.info("Initalized successfully")
 
     def get_flairs(self) -> ConfigParser:
         """fetches flairs"""
