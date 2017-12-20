@@ -15,7 +15,7 @@ class Flairbot(object):
         self.reddit: praw.Reddit = reddit
         self.subreddit: praw.models.Subreddit = self.reddit.subreddit(subreddit)
         self.config: ConfigParser = self.get_config()
-        self.image_flairs: ConfigParser = self.get_config("flair")
+        self.image_flairs: ConfigParser = self.get_config("flairs")
         self.text_flairs: ConfigParser = self.get_config("text")
         self.logger.info("Initalized successfully")
         return
