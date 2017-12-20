@@ -27,12 +27,14 @@ class Flairbot(object):
 
         self.logger.debug("Getting config")
         config_location = '/'.join(item for item in ["flairbot", "config", section] if item)
-        config_str: str = self.subreddit.wiki[config_location].content_md
-        if config_str:
+        import prawcore
+        try:
+            config_str: str = self.subreddit.wiki[config_location].content_md
+        except prawcore.exceptions.NotFound:
+            self.logger.error("Config \"%s\" found", config_location)
+        else:
             self.logger.debug("Got config \"%s\"", config_location)
             parser.read_string(config_str)
-        else:
-            self.logger.error("Config \"%s\" found", config_location)
 
         self.logger.debug("Config created")
         return parser
