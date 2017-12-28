@@ -57,7 +57,7 @@ class Flairbot(object):
                     )
                     self.process_pm(message)
         except prawcore.exceptions.RequestException:
-            self.logger.exception("Request error: Sleeping for 5 minutes.")
+            self.logger.debug("Request error: Sleeping for 5 minutes.")
             import time
             time.sleep(60 * 5)
 
