@@ -42,7 +42,7 @@ class Flairbot(object):
     def fetch_pms(self) -> None:
         """Get PMs for account"""
         import prawcore
-
+        from time import sleep
         try:
             for message in self.reddit.inbox.unread():
                 if message.subject == self.config.get(
@@ -58,8 +58,10 @@ class Flairbot(object):
                     self.process_pm(message)
         except prawcore.exceptions.RequestException:
             self.logger.debug("Request error: Sleeping for 5 minutes.")
-            import time
-            time.sleep(60 * 5)
+            sleep(60 * 5)
+        except prawcore.exceptions.ResponseException:
+            self.logger.error("Response error: Sleeping for 1 minute.")
+            sleep(60)
 
     def process_pm(self, message: praw.models.Message) -> None:
         """Process the PMs"""
