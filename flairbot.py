@@ -69,8 +69,7 @@ class Flairbot(object):
         self.image_flairs = self.get_config("flairs")
         self.logger.debug("Updated flairs")
 
-        flair: str = message.body
-        result: Optional[Tuple[str, str, str]] = self.get_image_flair_properties(flair)
+        result: Optional[Tuple[str, str, str]] = self.get_image_flair_properties(message.body)
         message.mark_read()
         if result is None:
             self.send_pm_failure(message)
@@ -91,7 +90,6 @@ class Flairbot(object):
                 if flair in self.image_flairs.options(section)
             ))
         except StopIteration:
-            self.logger.warning("Flair \"%s\" does not exist", flair)
             return None
 
         default_text: str = self.image_flairs[section][flair]
@@ -102,10 +100,12 @@ class Flairbot(object):
     def send_pm_failure(self, message: praw.models.Message):
         """pms user informing flair selection is invalid"""
         user: praw.models.Redditor = message.author
+        flair: str = message.body
+        self.logger.warning("Flair selection \"%s\" by /u/%s does not exist", flair, str(user))
 
         self.logger.debug("Sending PM to /u/%s", user)
         message_str: str = (
-            f"Your flair selection \"{message.body}\" was invalid."
+            f"Your flair selection \"{flair}\" was invalid."
             " Flairs can be found on the sidebar."
         )
 
