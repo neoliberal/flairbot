@@ -50,12 +50,8 @@ class Flairbot(object):
                         "subject",
                         fallback="updateflair"
                     ):
-                    self.logger.debug(
-                        "Processing request \"%s\" for /u/%s",
-                        message.body,
-                        message.author
-                    )
-                    self.process_pm(message)
+                    message.mark_read()
+                    self.set_flair(message)
         except prawcore.exceptions.RequestException:
             self.logger.debug("Request error: Sleeping for 5 minutes.")
             sleep(60 * 5)
@@ -63,92 +59,96 @@ class Flairbot(object):
             self.logger.error("Response error: Sleeping for 1 minute.")
             sleep(60)
 
-    def process_pm(self, message: praw.models.Message) -> None:
-        """Process the PMs"""
-        self.logger.debug("Updating image and text flairs")
-        self.image_flairs = self.get_config("images")
-        self.text_flairs = self.get_config("text")
-        self.logger.debug("Updated flairs")
+    def set_flair(self, message: praw.models.Message) -> None:
+        """Set the flairs"""
+        author: praw.models.Redditor = message.author
+        for current_user_flair in self.subreddit.flair(redditor=author):
+            current_class: Optional[str] = current_user_flair["flair_css_class"]
+            text: str = current_user_flair["flair_text"]
+            self.logger.debug("Setting flair for /u/%s with class \"%s\"", author, current_class)
 
-        result: Optional[Tuple[str, str, str]] = self.get_image_flair_properties(message.body)
-        message.mark_read()
-        if result is None:
-            self.send_pm_failure(message)
-            return
+            decomposed_class: List[str] = [] if current_class is None else current_class.split(' ')
+            new_class: List[str] = []
 
-        self.set_flair(message.author, result[0], result[1], result[2])
+            image_flair: Optional[Tuple[str, str, str]] = self.image_flair_properties(message.body)
+            if image_flair is None:
+                self.send_pm_failure(message)
+                return
+            else:
+                section, image_flair, default_text = image_flair #type: ignore
+                new_class.extend([section, image_flair]) # type: ignore
 
-    def get_image_flair_properties(self, image_flair: str) -> Optional[Tuple[str, str, str]]:
+            text_flair: Optional[Tuple[str, ...]] = self.text_flair_properties(decomposed_class)
+            if text_flair is not None:
+                new_class.extend(list(text_flair))
+            else:
+                text = default_text
+
+            combined_class: str = " ".join(new_class)
+            self.subreddit.flair.set(redditor=author, text=text, css_class=combined_class)
+            self.logger.debug("/u/%s changed to \"%s\" (%s)", author, text, combined_class)
+
+    def image_flair_properties(self, image_flair: str) -> Optional[Tuple[str, str, str]]:
         """
         Match flair selection to correct category
 
         returns None if no match
         """
-        self.logger.debug("Getting flair properties")
+        self.logger.debug("Updating image flairs")
+        self.image_flairs = self.get_config("images")
+        self.logger.debug("Updated image flairs")
+
+        self.logger.debug("Getting image flair properties for selection")
         try:
             section: str = next((
                 section for section, image_flairs in self.image_flairs.items()
                 if image_flair in image_flairs
             ))
         except StopIteration:
+            self.logger.debug("Could not find match")
             return None
 
         default_text: str = self.image_flairs[section][image_flair]
         self.logger.debug("Got flair properties")
         return (section, image_flair, default_text)
 
+    def text_flair_properties(self, old: List[str]) -> Optional[Tuple[str, ...]]:
+        """
+        Matches old text flair to correct category
+
+        returns None if no math
+        """
+        self.logger.debug("Updating text flairs")
+        self.text_flairs = self.get_config("text")
+        self.logger.debug("Updated text flairs")
+
+        self.logger.debug("Getting text flair properties")
+        for role, flair_color in self.text_flairs.items("roles"):
+            if role in old:
+                self.logger.debug("Found text flair match")
+                return (role, flair_color, "text")
+
+        for special_role, distinguished_class in self.text_flairs.items("special_roles"):
+            if special_role in old:
+                for sub_role, flair_color in self.text_flairs.items(f"{special_role}_roles"):
+                    if sub_role in old:
+                        return (special_role, distinguished_class, sub_role, flair_color, "text")
+        self.logger.warning("Could not find matching text flair")
+        return None
+
     # pylint: disable=R0201
     def send_pm_failure(self, message: praw.models.Message):
         """pms user informing flair selection is invalid"""
         user: praw.models.Redditor = message.author
         flair: str = message.body
-        self.logger.warning("Flair selection \"%s\" by /u/%s does not exist", flair, str(user))
+        self.logger.warning("Flair selection \"%s\" by /u/%s does not exist",
+                            flair, str(user))
 
         self.logger.debug("Sending PM to /u/%s", user)
-        message_str: str = (
-            f"Your flair selection \"{flair}\" was invalid."
-            " Flairs can be found on the sidebar."
-        )
+        message_str: str = (f"Your flair selection \"{flair}\" was invalid."
+                            " Flairs can be found on the sidebar.")
 
-        user.message(
-            subject="Flair update failed",
-            message=message_str
-        )
+        user.message(subject="Flair update failed", message=message_str)
 
         self.logger.debug("PM sent to /u/%s", user)
         return
-
-    def set_flair(self, user: praw.models.Redditor, section: str, flair: str, text: str):
-        """Set the flairs"""
-        for current_user_flair in self.subreddit.flair(redditor=user):
-            current_class: Optional[str] = current_user_flair["flair_css_class"]
-            decomposed_class: List[str] = [] if current_class is None else current_class.split(' ')
-
-            self.logger.debug("Setting flair for /u/%s with class \"%s\"", user, current_class)
-            new_class: List[str] = []
-
-            special: bool = False
-            for role, flair_color in self.text_flairs.items("roles"):
-                if role in decomposed_class:
-                    special = True
-                    new_class.extend([role, flair_color, "text"])
-
-            for special_role, distinguished_class in self.text_flairs.items("special_roles"):
-                if special_role in decomposed_class:
-                    special = True
-                    new_class.extend([special_role, distinguished_class])
-                    for sub_role, flair_color in self.text_flairs.items(f"{special_role}_roles"):
-                        if sub_role in decomposed_class:
-                            new_class.extend([sub_role, flair_color, "text"])
-
-            new_class.extend([section, flair, "image"])
-            new_text: str = current_user_flair["flair_text"] if special else text
-            combined_class: str = " ".join(new_class)
-            self.subreddit.flair.set(
-                redditor=user,
-                text=new_text,
-                css_class=combined_class
-            )
-            self.logger.debug("Flair for /u/%s changed to \"%s\" (%s)",
-                              user, new_text, combined_class
-                             )
