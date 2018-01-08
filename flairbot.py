@@ -78,7 +78,7 @@ class Flairbot(object):
 
         self.set_flair(message.author, result[0], result[1], result[2])
 
-    def get_image_flair_properties(self, flair: str) -> Optional[Tuple[str, str, str]]:
+    def get_image_flair_properties(self, image_flair: str) -> Optional[Tuple[str, str, str]]:
         """
         Match flair selection to correct category
 
@@ -87,15 +87,15 @@ class Flairbot(object):
         self.logger.debug("Getting flair properties")
         try:
             section: str = next((
-                section for section in self.image_flairs.sections()
-                if flair in self.image_flairs.options(section)
+                section for section, image_flairs in self.image_flairs.items()
+                if image_flair in image_flairs
             ))
         except StopIteration:
             return None
 
-        default_text: str = self.image_flairs[section][flair]
+        default_text: str = self.image_flairs[section][image_flair]
         self.logger.debug("Got flair properties")
-        return (section, flair, default_text)
+        return (section, image_flair, default_text)
 
     # pylint: disable=R0201
     def send_pm_failure(self, message: praw.models.Message):
