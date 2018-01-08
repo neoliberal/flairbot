@@ -70,13 +70,13 @@ class Flairbot(object):
             decomposed_class: List[str] = [] if current_class is None else current_class.split(' ')
             new_class: List[str] = []
 
-            image_flair: Optional[Tuple[str, str, str]] = self.image_flair_properties(message.body)
+            image_flair: Optional[Tuple[str, str, str, str]] = self.image_flair_properties(message.body)
             if image_flair is None:
                 self.send_pm_failure(message)
                 return
             else:
-                section, image_flair, default_text = image_flair #type: ignore
-                new_class.extend([section, image_flair]) # type: ignore
+                *image_properties, default_text = image_flair #type: ignore
+                new_class.extend(image_properties) # type: ignore
 
             text_flair: Optional[Tuple[str, ...]] = self.text_flair_properties(decomposed_class)
             if text_flair is not None:
@@ -88,7 +88,7 @@ class Flairbot(object):
             self.subreddit.flair.set(redditor=author, text=text, css_class=combined_class)
             self.logger.debug("/u/%s changed to \"%s\" (%s)", author, text, combined_class)
 
-    def image_flair_properties(self, image_flair: str) -> Optional[Tuple[str, str, str]]:
+    def image_flair_properties(self, image_flair: str) -> Optional[Tuple[str, str, str, str]]:
         """
         Match flair selection to correct category
 
@@ -110,7 +110,7 @@ class Flairbot(object):
 
         default_text: str = self.image_flairs[section][image_flair]
         self.logger.debug("Got flair properties")
-        return (section, image_flair, default_text)
+        return (section, image_flair, "image", default_text)
 
     def text_flair_properties(self, old: List[str]) -> Optional[Tuple[str, ...]]:
         """
