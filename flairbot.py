@@ -122,31 +122,26 @@ class Flairbot(object):
         for current_user_flair in self.subreddit.flair(redditor=user):
             current_class: Optional[str] = current_user_flair["flair_css_class"]
             decomposed_class: List[str] = [] if current_class is None else current_class.split(' ')
-            current_text: str = current_user_flair["flair_text"]
 
             self.logger.debug("Setting flair for /u/%s with class \"%s\"", user, current_class)
             new_class: List[str] = []
 
             special: bool = False
-            for role in self.text_flairs.options("roles"):
+            for role, flair_color in self.text_flairs.items("roles"):
                 if role in decomposed_class:
                     special = True
-                    flair_color: str = self.text_flairs["roles"][role]
                     new_class.extend([role, flair_color, "text"])
 
-            for special_role in self.text_flairs.options("special_roles"):
+            for special_role, distinguished_class in self.text_flairs.items("special_roles"):
                 if special_role in decomposed_class:
                     special = True
-                    distinguished_class: str = self.text_flairs["special_roles"][special_role]
                     new_class.extend([special_role, distinguished_class])
-                    special_category: str = f"{special_role}_roles"
-                    for sub_role in self.text_flairs.options(special_category):
+                    for sub_role, flair_color in self.text_flairs.items(f"{special_role}_roles"):
                         if sub_role in decomposed_class:
-                            distinguished_color: str = self.text_flairs[special_category][sub_role]
-                            new_class.extend([sub_role, distinguished_color, "text"])
+                            new_class.extend([sub_role, flair_color, "text"])
 
             new_class.extend([section, flair, "image"])
-            new_text: str = current_text if special else text
+            new_text: str = current_user_flair["flair_text"] if special else text
             combined_class: str = " ".join(new_class)
             self.subreddit.flair.set(
                 redditor=user,
