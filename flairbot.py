@@ -133,7 +133,7 @@ class Flairbot(object):
                 for sub_role, flair_color in self.text_flairs.items(f"{special_role}_roles"):
                     if sub_role in old:
                         return (special_role, distinguished_class, sub_role, flair_color, "text")
-        self.logger.warning("Could not find matching text flair")
+        self.logger.debug("Could not find matching text flair")
         return None
 
     # pylint: disable=R0201
