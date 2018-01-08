@@ -65,8 +65,9 @@ class Flairbot(object):
 
     def process_pm(self, message: praw.models.Message) -> None:
         """Process the PMs"""
-        self.logger.debug("Updating flairs")
+        self.logger.debug("Updating image and text flairs")
         self.image_flairs = self.get_config("flairs")
+        self.text_flairs = self.get_config("text")
         self.logger.debug("Updated flairs")
 
         result: Optional[Tuple[str, str, str]] = self.get_image_flair_properties(message.body)
