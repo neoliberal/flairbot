@@ -69,7 +69,7 @@ class Flairbot(object):
             decomposed_class: List[str] = [] if current_class is None else current_class.split(' ')
             new_class: List[str] = []
 
-            image_flair: Optional[Tuple[str, str, str, str]] = self.image_flair_properties(message.body)
+            image_flair: Optional[Tuple[str, ...]] = self.image_flair_properties(message.body)
             if image_flair is None:
                 self.send_pm_failure(message)
                 return
