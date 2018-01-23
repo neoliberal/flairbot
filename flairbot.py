@@ -1,5 +1,5 @@
 """Set user flairs."""
-from configparser import ConfigParser
+from configparser import ConfigParser, ParsingError
 import logging
 from typing import Optional, Tuple, List
 
@@ -15,28 +15,30 @@ class Flairbot(object):
         self.logger: logging.Logger = slack_logger.initialize("flairbot")
         self.reddit: praw.Reddit = reddit
         self.subreddit: praw.models.Subreddit = self.reddit.subreddit(subreddit)
-        self.config: ConfigParser = self.get_config()
+        self.config: ConfigParser = self.get_wiki_page()
         self.logger.info("Initalized successfully")
         return
 
-    def get_config(self, section: Optional[str] = None) -> ConfigParser:
-        """returns config"""
-        self.logger.debug("Creating config")
-        parser: ConfigParser = ConfigParser(allow_no_value=True)
+    def get_wiki_page(self, page: Optional[str] = None) -> ConfigParser:
+        """gets current groups"""
+        groups: ConfigParser = ConfigParser(allow_no_value=True)
 
-        self.logger.debug("Getting config")
-        config_location: str = '/'.join(filter(None, ["flairbot", "config", section]))
+        combined_page: str = '/'.join(filter(None, ["flairbot", page]))
+        self.logger.debug("Getting wiki page \"%s\"", combined_page)
         import prawcore
         try:
-            config_str: str = self.subreddit.wiki[config_location].content_md
+            groups.read_string(self.subreddit.wiki[combined_page].content_md)
         except prawcore.exceptions.NotFound:
-            self.logger.error("Config \"%s\" found", config_location)
-        else:
-            self.logger.debug("Got config \"%s\"", config_location)
-            parser.read_string(config_str)
-
-        self.logger.debug("Config created")
-        return parser
+            self.logger.error("Could not find groups")
+            raise
+        except ParsingError:
+            self.logger.exception("Malformed file, could not parse")
+            raise
+        except prawcore.exceptions.PrawcoreException:
+            self.logger.exception("Unknown exception caught")
+            raise
+        self.logger.debug("Successfully got groups")
+        return groups
 
     def fetch_pms(self) -> None:
         """Get PMs for account"""
@@ -45,10 +47,7 @@ class Flairbot(object):
         try:
             for message in self.reddit.inbox.unread():
                 if message.subject == self.config.get(
-                        "messages",
-                        "subject",
-                        fallback="updateflair"
-                    ):
+                        "messages", "subject", fallback="updateflair"):
                     message.mark_read()
                     self.set_flair(message)
         except prawcore.exceptions.ServerError:
@@ -97,7 +96,7 @@ class Flairbot(object):
         returns None if no match
         """
         self.logger.debug("Updating image flairs")
-        image_flairs: ConfigParser = self.get_config("images")
+        image_flairs: ConfigParser = self.get_wiki_page("images")
         self.logger.debug("Updated image flairs")
 
         self.logger.debug("Getting image flair properties for selection")
@@ -121,7 +120,7 @@ class Flairbot(object):
         returns None if no math
         """
         self.logger.debug("Updating text flairs")
-        text_flairs: ConfigParser = self.get_config("text")
+        text_flairs: ConfigParser = self.get_wiki_page("text")
         self.logger.debug("Updated text flairs")
 
         self.logger.debug("Getting text flair properties")
