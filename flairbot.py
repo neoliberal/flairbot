@@ -25,7 +25,7 @@ class Flairbot(object):
         parser: ConfigParser = ConfigParser(allow_no_value=True)
 
         self.logger.debug("Getting config")
-        config_location = '/'.join(filter(None, ["flairbot", "config", section]))
+        config_location: str = '/'.join(filter(None, ["flairbot", "config", section]))
         import prawcore
         try:
             config_str: str = self.subreddit.wiki[config_location].content_md
@@ -51,6 +51,9 @@ class Flairbot(object):
                     ):
                     message.mark_read()
                     self.set_flair(message)
+        except prawcore.exceptions.ServerError:
+            self.logger.error("Server error: Sleeping for 1 minute.")
+            sleep(60)
         except prawcore.exceptions.RequestException:
             self.logger.debug("Request error: Sleeping for 5 minutes.")
             sleep(60 * 5)
