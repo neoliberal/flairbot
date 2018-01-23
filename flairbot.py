@@ -23,13 +23,13 @@ class Flairbot(object):
         """gets current groups"""
         groups: ConfigParser = ConfigParser(allow_no_value=True)
 
-        combined_page: str = '/'.join(filter(None, ["flairbot", page]))
+        combined_page: str = '/'.join(filter(None, ["flairbot", "config", page]))
         self.logger.debug("Getting wiki page \"%s\"", combined_page)
         import prawcore
         try:
             groups.read_string(self.subreddit.wiki[combined_page].content_md)
         except prawcore.exceptions.NotFound:
-            self.logger.error("Could not find groups")
+            self.logger.error("Could not find wiki page %s", combined_page)
             raise
         except ParsingError:
             self.logger.exception("Malformed file, could not parse")
