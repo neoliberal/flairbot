@@ -25,7 +25,7 @@ class Flairbot(object):
         parser: ConfigParser = ConfigParser(allow_no_value=True)
 
         self.logger.debug("Getting config")
-        config_location = '/'.join(item for item in ["flairbot", "config", section] if item)
+        config_location = '/'.join(filter(None, ["flairbot", "config", section]))
         import prawcore
         try:
             config_str: str = self.subreddit.wiki[config_location].content_md
