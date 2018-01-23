@@ -140,8 +140,7 @@ class Flairbot(object):
         """pms user informing flair selection is invalid"""
         user: praw.models.Redditor = message.author
         flair: str = message.body
-        self.logger.warning("Flair selection \"%s\" by /u/%s does not exist",
-                            flair, str(user))
+        self.logger.warning("Flair selection \"%s\" by /u/%s does not exist", flair, str(user))
 
         self.logger.debug("Sending PM to /u/%s", user)
         message_str: str = (f"Your flair selection \"{flair}\" was invalid."
