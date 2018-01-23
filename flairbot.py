@@ -8,6 +8,7 @@ from slack_python_logging import slack_logger
 
 class Flairbot(object):
     """Main class"""
+    __slots__ = ["reddit", "subreddit", "config", "logger"]
 
     def __init__(self, reddit: praw.Reddit, subreddit: str) -> None:
         """Initial setup"""
@@ -15,8 +16,6 @@ class Flairbot(object):
         self.reddit: praw.Reddit = reddit
         self.subreddit: praw.models.Subreddit = self.reddit.subreddit(subreddit)
         self.config: ConfigParser = self.get_config()
-        self.image_flairs: ConfigParser = self.get_config("images")
-        self.text_flairs: ConfigParser = self.get_config("text")
         self.logger.info("Initalized successfully")
         return
 
@@ -95,20 +94,20 @@ class Flairbot(object):
         returns None if no match
         """
         self.logger.debug("Updating image flairs")
-        self.image_flairs = self.get_config("images")
+        image_flairs: ConfigParser = self.get_config("images")
         self.logger.debug("Updated image flairs")
 
         self.logger.debug("Getting image flair properties for selection")
         try:
             section: str = next((
-                section for section, image_flairs in self.image_flairs.items()
+                section for section, image_flairs in image_flairs.items()
                 if image_flair in image_flairs
             ))
         except StopIteration:
             self.logger.debug("Could not find match")
             return None
 
-        default_text: str = self.image_flairs[section][image_flair]
+        default_text: str = image_flairs[section][image_flair]
         self.logger.debug("Got flair properties")
         return (section, image_flair, "image", default_text)
 
@@ -119,18 +118,18 @@ class Flairbot(object):
         returns None if no math
         """
         self.logger.debug("Updating text flairs")
-        self.text_flairs = self.get_config("text")
+        text_flairs: ConfigParser = self.get_config("text")
         self.logger.debug("Updated text flairs")
 
         self.logger.debug("Getting text flair properties")
-        for role, flair_color in self.text_flairs.items("roles"):
+        for role, flair_color in text_flairs.items("roles"):
             if role in old:
                 self.logger.debug("Found text flair match")
                 return (role, flair_color, "text")
 
-        for special_role, distinguished_class in self.text_flairs.items("special_roles"):
+        for special_role, distinguished_class in text_flairs.items("special_roles"):
             if special_role in old:
-                for sub_role, flair_color in self.text_flairs.items(f"{special_role}_roles"):
+                for sub_role, flair_color in text_flairs.items(f"{special_role}_roles"):
                     if sub_role in old:
                         return (special_role, distinguished_class, sub_role, flair_color, "text")
         self.logger.debug("Could not find matching text flair")
