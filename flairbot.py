@@ -85,6 +85,11 @@ class Flairbot(object):
             else:
                 text = default_text
 
+            # As far as I can tell, the default text is always applied
+            # If that ISN'T true, then stuff might break here
+            # Prepend emoji to flair text
+            #text = f":{image_flair[1]}: {text}"
+
             combined_class: str = " ".join(new_class)
             self.subreddit.flair.set(redditor=author, text=text, css_class=combined_class)
             self.logger.debug("/u/%s changed to \"%s\" (%s)", author, text, combined_class)
