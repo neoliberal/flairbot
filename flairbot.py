@@ -65,6 +65,11 @@ class Flairbot(object):
         author: praw.models.Redditor = message.author
         for current_user_flair in self.subreddit.flair(redditor=author):
             current_class: Optional[str] = current_user_flair["flair_css_class"]
+
+            if 'brown' in current_class:
+                self.send_pm_not_allowed(message)
+                return
+
             text: str = current_user_flair["flair_text"]
             self.logger.debug("Setting flair for /u/%s with class \"%s\"", author, current_class)
 
@@ -155,5 +160,15 @@ class Flairbot(object):
 
         user.message(subject="Flair update failed", message=message_str)
 
+        self.logger.debug("PM sent to /u/%s", user)
+        return
+
+    def send_pm_not_allowed(self, message: praw.models.Message):
+        """PMs user that they're not allowed to change their flair"""
+        user: praw.models.Redditor = message.author
+        flair: str = message.body
+        self.logger.debug("Sending PM to /u/%s", user)
+        message_str: str = ("You have a brown shame flair, and therefore are not allowed to change it.")
+        user.message(subject="Flair update failed", message=message_str)
         self.logger.debug("PM sent to /u/%s", user)
         return
