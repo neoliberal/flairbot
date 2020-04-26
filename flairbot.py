@@ -66,7 +66,7 @@ class Flairbot(object):
         for current_user_flair in self.subreddit.flair(redditor=author):
             current_class: Optional[str] = current_user_flair["flair_css_class"]
 
-            if 'brown' in current_class:
+            if current_class is not None and 'brown' in current_class:
                 self.send_pm_not_allowed(message)
                 return
 
@@ -96,7 +96,8 @@ class Flairbot(object):
             text = f":{image_flair[1]}: {text}"
 
             combined_class: str = " ".join(new_class)
-            self.subreddit.flair.set(redditor=author, text=text, css_class=combined_class)
+            #self.subreddit.flair.set(redditor=author, text=text, css_class=combined_class)
+            self.subreddit.flair.set(redditor=author, text=text)
             self.logger.debug("/u/%s changed to \"%s\" (%s)", author, text, combined_class)
 
     def image_flair_properties(self, image_flair: str) -> Optional[Tuple[str, str, str, str]]:
