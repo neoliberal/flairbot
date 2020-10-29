@@ -12,7 +12,11 @@ class Flairbot(object):
 
     def __init__(self, reddit: praw.Reddit, subreddit: str) -> None:
         """Initial setup"""
-        self.logger: logging.Logger = slack_logger.initialize("flairbot")
+        self.logger: logging.Logger = slack_logger.initialize(
+            app_name = "flairbot",
+            stream_loglevel = "INFO",
+            slack_loglevel = "CRITICAL",
+        )
         self.reddit: praw.Reddit = reddit
         self.subreddit: praw.models.Subreddit = self.reddit.subreddit(subreddit)
         self.config: ConfigParser = self.get_wiki_page()
@@ -54,7 +58,7 @@ class Flairbot(object):
             self.logger.error("Server error: Sleeping for 1 minute.")
             sleep(60)
         except prawcore.exceptions.RequestException:
-            self.logger.debug("Request error: Sleeping for 5 minutes.")
+            self.logger.error("Request error: Sleeping for 5 minutes.")
             sleep(60 * 5)
         except prawcore.exceptions.ResponseException:
             self.logger.error("Response error: Sleeping for 1 minute.")
@@ -98,7 +102,7 @@ class Flairbot(object):
             combined_class: str = " ".join(new_class)
             #self.subreddit.flair.set(redditor=author, text=text, css_class=combined_class)
             self.subreddit.flair.set(redditor=author, text=text)
-            self.logger.debug("/u/%s changed to \"%s\" (%s)", author, text, combined_class)
+            self.logger.info("/u/%s changed to \"%s\" (%s)", author, text, combined_class)
 
     def image_flair_properties(self, image_flair: str) -> Optional[Tuple[str, str, str, str]]:
         """
